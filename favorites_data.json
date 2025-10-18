@@ -1,0 +1,16 @@
+[
+  {
+    "id": 1,
+    "product_name": "测试产品",
+    "product_id": "test123",
+    "color": "黑色",
+    "size": "M",
+    "price_krw": 50000,
+    "price_cny": 250.0,
+    "sku": "test_sku_123",
+    "image_url": "https://example.com/image.jpg",
+    "product_url": "https://example.com/product",
+    "stock_status": "有库存",
+    "added_time": "2025-10-18T19:14:49.887409"
+  }
+]
