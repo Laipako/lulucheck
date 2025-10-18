@@ -18,8 +18,8 @@ def translate_korean_to_english(korean_name, show_progress=True):
     
     # 优先尝试多个在线翻译服务（按优先级排序）
     translators = [
-        ('google', '谷歌翻译'),
-        ('bing', 'Bing翻译')
+        ('bing', 'Bing翻译'),
+        ('google', '谷歌翻译')
     ]
     
     for i, (translator_name, translator_display) in enumerate(translators):
