@@ -9,37 +9,26 @@ import streamlit as st
 def translate_korean_to_english(korean_name, show_progress=True):
     """
     将韩语产品名称翻译为英语
-    使用多种翻译方法确保准确性，支持多个翻译引擎
+    优先使用在线翻译引擎，手动翻译作为备用方案
     """
-    # 首先尝试手动翻译（更可靠，不依赖网络）
     if show_progress:
         progress_bar = st.progress(0)
         status_text = st.empty()
         status_text.text("🔍 开始翻译...")
     
-    manual_result = manual_translation_fallback(korean_name)
-    if manual_result and manual_result != korean_name:
-        if show_progress:
-            progress_bar.progress(100)
-            status_text.text("✅ 手动翻译成功")
-        print(f"手动翻译成功: {korean_name} -> {manual_result}")
-        return manual_result
-    
-    # 如果手动翻译失败，尝试多个在线翻译服务
+    # 优先尝试多个在线翻译服务（按优先级排序）
     translators = [
-        ('bing', 'Bing翻译'),
-        ('baidu', '百度翻译'),
         ('google', '谷歌翻译'),
-        ('netease', '网易翻译')
+        ('bing', 'Bing翻译')
     ]
     
     for i, (translator_name, translator_display) in enumerate(translators):
         try:
             if show_progress:
-                progress = int((i + 1) / len(translators) * 80) + 10  # 10-90%
+                progress = int((i + 1) / len(translators) * 70) + 10  # 10-80%
                 progress_bar.progress(progress)
-                status_text.text(f"🌐 尝试{translator_display}...")
-                time.sleep(0.5)  # 让用户看到进度
+                status_text.text(f"🌐 优先使用{translator_display}...")
+                time.sleep(0.3)  # 让用户看到进度
             
             print(f"尝试{translator_display}: {korean_name}")
             english_name = ts.translate_text(
@@ -63,22 +52,22 @@ def translate_korean_to_english(korean_name, show_progress=True):
             print(f"{translator_display}失败: {e}")
             continue
     
-    # 所有在线翻译都失败，使用增强的手动翻译
+    # 所有在线翻译都失败，使用增强的手动翻译作为备用方案
     if show_progress:
-        progress_bar.progress(95)
-        status_text.text("⚠️ 在线翻译失败，使用备用方案...")
-        time.sleep(1)
+        progress_bar.progress(85)
+        status_text.text("📚 在线翻译失败，尝试手动翻译备用方案...")
+        time.sleep(0.5)
     
     enhanced_fallback = enhanced_manual_translation(korean_name)
     
     if show_progress:
         progress_bar.progress(100)
-        status_text.text("✅ 备用翻译完成")
+        status_text.text("✅ 手动翻译备用方案完成")
         time.sleep(1)
         progress_bar.empty()
         status_text.empty()
     
-    print(f"使用增强备用翻译: {korean_name} -> {enhanced_fallback}")
+    print(f"使用手动翻译备用方案: {korean_name} -> {enhanced_fallback}")
     return enhanced_fallback
 
 
@@ -174,6 +163,27 @@ def manual_translation_fallback(korean_name):
         '쓰리': 'Three',
         '포': 'Four',
         '파이브': 'Five',
+        
+        # 新增缺失的词汇
+        '핏': 'Fit',
+        '롱슬리브': 'Long Sleeve',
+        '쇼츠': 'Shorts',
+        '숏슬리브': 'Short Sleeve',
+        '슬리브': 'Sleeve',
+        '레귤러': 'Regular',
+        '아시아': 'Asia',
+        '알라인': 'Align',
+        '팔라초': 'Palazzo',
+        '그루브': 'Groove',
+        '슈퍼': 'Super',
+        '하이라이즈': 'High-Rise',
+        '플레어드': 'Flared',
+        '노라인': 'No Line',
+        '스쿱백': 'Scoopback',
+        '크롬': 'Chrome',
+        '눌루': 'Nulu',
+        '루온': 'Luon',
+        '에버루': 'Everlux',
     }
     
     # 分割韩文名称并翻译每个部分
@@ -187,7 +197,13 @@ def manual_translation_fallback(korean_name):
             # 如果找不到翻译，保留原词
             translated_parts.append(word)
     
-    return ' '.join(translated_parts)
+    result = ' '.join(translated_parts)
+    
+    # 如果翻译结果和原名称相同，说明没有翻译成功
+    if result == korean_name:
+        return korean_name
+    
+    return result
 
 
 def enhanced_manual_translation(korean_name):
@@ -251,6 +267,57 @@ def enhanced_manual_translation(korean_name):
         '집': 'Zip',
         '하프': 'Half',
         '풀': 'Full',
+        
+        # 新增缺失的词汇
+        '핏': 'Fit',
+        '롱슬리브': 'Long Sleeve',
+        '쇼츠': 'Shorts',
+        '숏슬리브': 'Short Sleeve',
+        '롱': 'Long',
+        '숏': 'Short',
+        '슬리브': 'Sleeve',
+        '레귤러': 'Regular',
+        '아시아': 'Asia',
+        '알라인': 'Align',
+        '팔라초': 'Palazzo',
+        '그루브': 'Groove',
+        '슈퍼': 'Super',
+        '하이라이즈': 'High-Rise',
+        '플레어드': 'Flared',
+        '노라인': 'No Line',
+        '스쿱백': 'Scoopback',
+        '크롬': 'Chrome',
+        '눌루': 'Nulu',
+        '루온': 'Luon',
+        '에버루': 'Everlux',
+        '스웨트': 'Sweat',
+        '스웨트셔츠': 'Sweatshirt',
+        '스웨트팬츠': 'Sweatpants',
+        '스웨트쇼츠': 'Sweatshorts',
+        '스웨트후디': 'Sweathoodie',
+        '스웨트조거': 'Sweatjogger',
+        '스웨트탱크': 'Sweattank',
+        '스웨트티': 'Sweattee',
+        '스웨트크루': 'Sweatcrew',
+        '스웨트풀오버': 'Sweatpullover',
+        '스웨트집': 'Sweatzip',
+        '스웨트하프집': 'Sweathalfzip',
+        '스웨트풀집': 'Sweatfullzip',
+        '스웨트오버사이즈': 'Sweatoversized',
+        '스웨트크롭': 'Sweatcropped',
+        '스웨트후드': 'Sweathooded',
+        '스웨트메쉬': 'Sweatmesh',
+        '스웨트벨트': 'Sweatbelt',
+        '스웨트리브드': 'Sweatribbed',
+        '스웨트루온': 'Sweatluon',
+        '스웨트눌루': 'Sweatnulu',
+        '스웨트에버루': 'Sweateverlux',
+        '스웨트맨스': "Men's Sweat",
+        '스웨트우먼스': "Women's Sweat",
+        '스웨트넥': 'Sweatneck',
+        '스웨트집': 'Sweatzip',
+        '스웨트하프': 'Sweathalf',
+        '스웨트풀': 'Sweatfull',
     }
     
     # 先尝试完整匹配
