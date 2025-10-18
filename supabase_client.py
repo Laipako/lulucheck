@@ -3,6 +3,7 @@ import streamlit as st
 import json
 import os
 from datetime import datetime
+from config import SUPABASE_URL, SUPABASE_KEY
 
 # 尝试导入supabase，如果失败则使用本地文件存储
 try:
@@ -70,9 +71,9 @@ class SupabaseManager:
             return
             
         try:
-            # 尝试从secrets获取配置
-            self.url = st.secrets.supabase.url
-            self.key = st.secrets.supabase.key
+            # 从config.py获取配置
+            self.url = SUPABASE_URL
+            self.key = SUPABASE_KEY
             self.client: Client = create_client(self.url, self.key)
             print("✅ Supabase连接成功")
         except Exception as e:
