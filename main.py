@@ -505,6 +505,26 @@ def show_home_page():
     """显示首页"""
     st.header("欢迎使用Lululemon查货系统")
     
+    # 显示存储状态
+    from lululemon_favorites_manager import get_storage_status
+    storage_status = get_storage_status()
+    
+    # 存储状态显示
+    st.markdown("---")
+    col1, col2, col3 = st.columns([2, 1, 1])
+    with col1:
+        st.markdown(f"**💾 数据存储**: {storage_status['icon']} {storage_status['name']}")
+    with col2:
+        if storage_status['type'] == 'local':
+            st.info("本地存储")
+        elif storage_status['type'] == 'supabase':
+            st.success("云端存储")
+        else:
+            st.warning("状态未知")
+    with col3:
+        st.caption(f"📝 {storage_status['description']}")
+    st.markdown("---")
+    
     col1, col2, col3 = st.columns(3)
     
     with col1:
@@ -913,6 +933,25 @@ def show_inventory_result(sku):
 def show_favorites_page():
     """显示收藏页面"""
     st.header("❤️ 我的收藏")
+    
+    # 显示存储状态
+    from lululemon_favorites_manager import get_storage_status
+    storage_status = get_storage_status()
+    
+    # 存储状态显示
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        st.markdown(f"**存储状态**: {storage_status['icon']} {storage_status['name']}")
+    with col2:
+        if storage_status['type'] == 'local':
+            st.info("💾 本地存储")
+        elif storage_status['type'] == 'supabase':
+            st.success("☁️ 云端存储")
+        else:
+            st.warning("❓ 状态未知")
+    
+    # 显示详细描述
+    st.caption(f"📝 {storage_status['description']}")
     
     # 初始化选中状态
     if "selected_favorites" not in st.session_state:

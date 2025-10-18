@@ -103,6 +103,14 @@ class SupabaseManager:
             return self.client
         else:
             raise Exception("Supabase连接不可用")
+    
+    def get_storage_info(self):
+        """获取存储信息"""
+        return {
+            "use_local_storage": self.use_local_storage,
+            "supabase_available": SUPABASE_AVAILABLE,
+            "client_initialized": self.client is not None
+        }
 
 
 # 创建全局Supabase管理器实例

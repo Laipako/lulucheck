@@ -6,6 +6,40 @@ from utils import is_duplicate
 from supabase_client import supabase_manager
 
 
+def get_storage_status():
+    """获取当前存储状态信息"""
+    try:
+        client = supabase_manager.get_client()
+        
+        # 检查是否使用本地存储
+        if hasattr(client, 'load_data'):
+            # 本地文件存储
+            return {
+                "type": "local",
+                "name": "本地文件存储",
+                "icon": "💾",
+                "description": "数据存储在本地文件中",
+                "path": "favorites.json"
+            }
+        else:
+            # Supabase存储
+            return {
+                "type": "supabase", 
+                "name": "Supabase云端存储",
+                "icon": "☁️",
+                "description": "数据存储在Supabase云端数据库中",
+                "url": "https://kmsebovqoemcenedwfbi.supabase.co"
+            }
+    except Exception as e:
+        return {
+            "type": "unknown",
+            "name": "存储状态未知",
+            "icon": "❓",
+            "description": f"无法确定存储状态: {str(e)}",
+            "error": str(e)
+        }
+
+
 def load_favorites():
     """从 Supabase 或本地文件加载所有收藏产品"""
     try:
@@ -50,16 +84,12 @@ def add_to_favorites(product_info):
         if is_duplicate(existing_favorites, product_info):
             return False, "该产品已存在于收藏中"
 
-        # 准备插入数据 - 使用兼容模式，只包含基础字段
+        # 准备插入数据 - 使用完整的字段结构
         product_data = {
-            "product_name": product_info["product_name"],
-            "product_id": product_info["product_id"]
-        }
-        
-        # 尝试添加可选字段（如果存在）
-        optional_fields = {
+            "product_name": product_info.get("product_name", ""),
+            "product_id": product_info.get("product_id", ""),
             "color": product_info.get("color"),
-            "size": product_info.get("size"), 
+            "size": product_info.get("size"),
             "price_krw": product_info.get("price_krw"),
             "price_cny": product_info.get("price_cny"),
             "sku": product_info.get("sku"),
@@ -69,10 +99,8 @@ def add_to_favorites(product_info):
             "product_name_en": product_info.get("product_name_en")
         }
         
-        # 只添加非空的字段
-        for field, value in optional_fields.items():
-            if value is not None and value != "":
-                product_data[field] = value
+        # 移除空值字段
+        product_data = {k: v for k, v in product_data.items() if v is not None and v != ""}
 
         client = supabase_manager.get_client()
         
@@ -90,69 +118,12 @@ def add_to_favorites(product_info):
             else:
                 return False, "保存到本地文件失败"
         else:
-            # Supabase存储 - 使用更安全的插入方式
-            try:
-                # 先尝试完整插入
-                response = client.table('lululemon_favorites').insert(product_data).execute()
-                if response.data:
-                    return True, "成功添加到收藏"
-                else:
-                    return False, "添加到数据库失败"
-            except Exception as db_error:
-                error_str = str(db_error)
-                print(f"数据库错误: {error_str}")
-                
-                # 如果是因为字段不存在，尝试逐步减少字段
-                if 'PGRST204' in error_str or 'column' in error_str.lower():
-                    # 智能字段检测和移除
-                    problematic_fields = []
-                    
-                    # 根据错误信息判断问题字段
-                    if 'color' in error_str:
-                        problematic_fields.append('color')
-                    if 'size' in error_str:
-                        problematic_fields.append('size')
-                    if 'sku' in error_str:
-                        problematic_fields.append('sku')
-                    if 'image_url' in error_str:
-                        problematic_fields.append('image_url')
-                    if 'product_url' in error_str:
-                        problematic_fields.append('product_url')
-                    if 'stock_status' in error_str:
-                        problematic_fields.append('stock_status')
-                    if 'product_name_en' in error_str:
-                        problematic_fields.append('product_name_en')
-                    if 'price_krw' in error_str:
-                        problematic_fields.append('price_krw')
-                    if 'price_cny' in error_str:
-                        problematic_fields.append('price_cny')
-                    
-                    # 移除问题字段
-                    safe_data = {k: v for k, v in product_data.items() 
-                                if k not in problematic_fields}
-                    
-                    try:
-                        response = client.table('lululemon_favorites').insert(safe_data).execute()
-                        if response.data:
-                            return True, f"成功添加到收藏（已跳过字段: {', '.join(problematic_fields)}）"
-                        else:
-                            return False, "添加到数据库失败"
-                    except Exception as e2:
-                        # 如果还是失败，尝试只使用最基础的字段
-                        basic_data = {
-                            "product_name": product_info["product_name"],
-                            "product_id": product_info["product_id"]
-                        }
-                        try:
-                            response = client.table('lululemon_favorites').insert(basic_data).execute()
-                            if response.data:
-                                return True, "成功添加到收藏（仅使用基础字段）"
-                            else:
-                                return False, "添加到数据库失败"
-                        except Exception as e3:
-                            return False, f"数据库字段不匹配: {str(e3)}"
-                else:
-                    return False, f"数据库错误: {str(db_error)}"
+            # Supabase存储
+            response = client.table('lululemon_favorites').insert(product_data).execute()
+            if response.data:
+                return True, "成功添加到收藏"
+            else:
+                return False, "添加到数据库失败"
 
     except Exception as e:
         print(f"❌❌ 添加到收藏失败: {e}")
