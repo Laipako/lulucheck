@@ -17,14 +17,14 @@ def translate_korean_to_english(korean_name, show_progress=True):
         status_text.text("🔍 开始翻译...")
     
     # 优先尝试多个在线翻译服务（按优先级排序）
-    # 根据测试结果优化的翻译优先级
+    # 根据用户要求的翻译优先级
     translators = [
-        ('sogou', '搜狗翻译'),         # 🥇 第一优先级 - 国内稳定，测试效果最好
-        ('google', '谷歌翻译'),        # 🥈 第二优先级 - 国际稳定，质量高
-        ('bing', 'Bing翻译'),          # 🥉 第三优先级 - 微软服务，稳定可靠
-        ('alibaba', '阿里翻译'),       # 4️⃣ 第四优先级 - 阿里云生态，备用
-        ('youdao', '有道翻译'),        # 5️⃣ 第五优先级 - 网易出品，备用
-        ('tencent', '腾讯翻译')        # 6️⃣ 第六优先级 - 腾讯生态，备用
+        ('sogou', '搜狗翻译'),         # 🥇 第一优先级 - 搜狗翻译
+        ('google', '谷歌翻译'),        # 🥈 第二优先级 - 谷歌翻译
+        ('bing', 'Bing翻译'),          # 🥉 第三优先级 - Bing翻译
+        ('alibaba', '阿里翻译'),       # 4️⃣ 备用 - 阿里翻译
+        ('youdao', '有道翻译'),        # 5️⃣ 备用 - 有道翻译
+        ('tencent', '腾讯翻译')        # 6️⃣ 备用 - 腾讯翻译
     ]
     
     for i, (translator_name, translator_display) in enumerate(translators):
