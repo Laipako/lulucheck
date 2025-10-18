@@ -2,30 +2,84 @@ import urllib.parse
 import html
 import translators as ts
 import re
+import time
+import streamlit as st
 
 
-def translate_korean_to_english(korean_name):
+def translate_korean_to_english(korean_name, show_progress=True):
     """
     将韩语产品名称翻译为英语
-    使用多种翻译方法确保准确性
+    使用多种翻译方法确保准确性，支持多个翻译引擎
     """
-    try:
-        # 方法1: 使用bing翻译服务
-        print(f"正在翻译: {korean_name}")
-        english_name = ts.translate_text(
-            korean_name,
-            from_language='ko',
-            to_language='en',
-            translator='bing',
-        )
-        print(f"翻译成功: {korean_name} -> {english_name}")
-        return english_name
-    except Exception as e:
-        print(f"翻译服务失败: {e}")
-        # 方法2: 使用手动翻译备用方案
-        fallback_result = manual_translation_fallback(korean_name)
-        print(f"使用备用翻译: {korean_name} -> {fallback_result}")
-        return fallback_result
+    # 首先尝试手动翻译（更可靠，不依赖网络）
+    if show_progress:
+        progress_bar = st.progress(0)
+        status_text = st.empty()
+        status_text.text("🔍 开始翻译...")
+    
+    manual_result = manual_translation_fallback(korean_name)
+    if manual_result and manual_result != korean_name:
+        if show_progress:
+            progress_bar.progress(100)
+            status_text.text("✅ 手动翻译成功")
+        print(f"手动翻译成功: {korean_name} -> {manual_result}")
+        return manual_result
+    
+    # 如果手动翻译失败，尝试多个在线翻译服务
+    translators = [
+        ('bing', 'Bing翻译'),
+        ('baidu', '百度翻译'),
+        ('google', '谷歌翻译'),
+        ('netease', '网易翻译')
+    ]
+    
+    for i, (translator_name, translator_display) in enumerate(translators):
+        try:
+            if show_progress:
+                progress = int((i + 1) / len(translators) * 80) + 10  # 10-90%
+                progress_bar.progress(progress)
+                status_text.text(f"🌐 尝试{translator_display}...")
+                time.sleep(0.5)  # 让用户看到进度
+            
+            print(f"尝试{translator_display}: {korean_name}")
+            english_name = ts.translate_text(
+                korean_name,
+                from_language='ko',
+                to_language='en',
+                translator=translator_name,
+            )
+            
+            if show_progress:
+                progress_bar.progress(100)
+                status_text.text(f"✅ {translator_display}成功")
+                time.sleep(1)  # 显示成功状态
+                progress_bar.empty()
+                status_text.empty()
+            
+            print(f"{translator_display}成功: {korean_name} -> {english_name}")
+            return english_name
+            
+        except Exception as e:
+            print(f"{translator_display}失败: {e}")
+            continue
+    
+    # 所有在线翻译都失败，使用增强的手动翻译
+    if show_progress:
+        progress_bar.progress(95)
+        status_text.text("⚠️ 在线翻译失败，使用备用方案...")
+        time.sleep(1)
+    
+    enhanced_fallback = enhanced_manual_translation(korean_name)
+    
+    if show_progress:
+        progress_bar.progress(100)
+        status_text.text("✅ 备用翻译完成")
+        time.sleep(1)
+        progress_bar.empty()
+        status_text.empty()
+    
+    print(f"使用增强备用翻译: {korean_name} -> {enhanced_fallback}")
+    return enhanced_fallback
 
 
 def manual_translation_fallback(korean_name):
@@ -136,7 +190,94 @@ def manual_translation_fallback(korean_name):
     return ' '.join(translated_parts)
 
 
-def extract_and_translate_product_name(url_encoded_name):
+def enhanced_manual_translation(korean_name):
+    """
+    增强的手动翻译方案 - 扩充的韩文到英文映射表
+    包含更多Lululemon产品相关词汇
+    """
+    # 扩充的翻译映射表
+    enhanced_map = {
+        # 产品名称（完整匹配优先）
+        '디파인 크롭 후드 재킷': 'Define Cropped Hooded Jacket',
+        '디파인 재킷': 'Define Jacket',
+        '디파인 오버사이즈드 재킷': 'Define Oversized Jacket',
+        '크롭 디파인 재킷 리브드': 'Cropped Define Jacket Ribbed',
+        '후드 디파인 재킷': 'Hooded Define Jacket',
+        '디파인 크롭 후드 재킷 메쉬': 'Define Cropped Hooded Jacket Mesh',
+        '후드 디파인 재킷 메쉬 벨트': 'Hooded Define Jacket Mesh Belt',
+        '디파인 재킷 루온': 'Define Jacket Luon',
+        '소프트 저지': 'Soft Jersey',
+        '크루 넥': 'Crew Neck',
+        '하프 집': 'Half Zip',
+        '풀 집': 'Full Zip',
+        '오버사이즈드': 'Oversized',
+        '크롭': 'Cropped',
+        '메쉬': 'Mesh',
+        '벨트': 'Belt',
+        '리브드': 'Ribbed',
+        '루온': 'Luon',
+        '눌루': 'Nulu',
+        
+        # 基础词汇
+        '디파인': 'Define',
+        '크롭': 'Cropped',
+        '후드': 'Hooded',
+        '재킷': 'Jacket',
+        '메쉬': 'Mesh',
+        '벨트': 'Belt',
+        '소프트': 'Soft',
+        '저지': 'Jersey',
+        '클래식': 'Classic',
+        '팬츠': 'Pants',
+        '셔츠': 'Shirt',
+        '후디': 'Hoodie',
+        '조거': 'Jogger',
+        '스웨트': 'Sweat',
+        '크루': 'Crew',
+        '탱크': 'Tank',
+        '티셔츠': 'T-Shirt',
+        '풀오버': 'Pullover',
+        '스테디': 'Steady',
+        '스테이트': 'State',
+        '트레이닝': 'Training',
+        '러닝': 'Running',
+        '요가': 'Yoga',
+        '워크아웃': 'Workout',
+        '오버사이즈': 'Oversized',
+        '리브드': 'Ribbed',
+        '맨스': "Men's",
+        '우먼스': "Women's",
+        '넥': 'Neck',
+        '집': 'Zip',
+        '하프': 'Half',
+        '풀': 'Full',
+    }
+    
+    # 先尝试完整匹配
+    if korean_name in enhanced_map:
+        return enhanced_map[korean_name]
+    
+    # 如果没有完整匹配，尝试分词翻译
+    translated_parts = []
+    words = re.findall(r'[가-힣]+|[a-zA-Z]+|\d+', korean_name)
+    
+    for word in words:
+        if word in enhanced_map:
+            translated_parts.append(enhanced_map[word])
+        else:
+            # 保留原词
+            translated_parts.append(word)
+    
+    result = ' '.join(translated_parts)
+    
+    # 如果翻译结果还是包含大量韩文，返回原名称
+    if result == korean_name or len([w for w in words if re.match(r'[가-힣]+', w)]) > len(words) / 2:
+        return korean_name  # 返回原始韩文名称，至少能显示
+    
+    return result
+
+
+def extract_and_translate_product_name(url_encoded_name, show_progress=True):
     """
     从URL编码的产品名称中提取并翻译
     """
@@ -147,7 +288,7 @@ def extract_and_translate_product_name(url_encoded_name):
         korean_name = html.unescape(korean_name)
         
         # 翻译为英文
-        english_name = translate_korean_to_english(korean_name)
+        english_name = translate_korean_to_english(korean_name, show_progress)
         
         return {
             'korean_name': korean_name,
@@ -163,7 +304,7 @@ def extract_and_translate_product_name(url_encoded_name):
         }
 
 
-def get_product_translation(product_name):
+def get_product_translation(product_name, show_progress=True):
     """
     获取产品翻译的简化接口
     如果输入已经是韩文，直接翻译
@@ -171,15 +312,75 @@ def get_product_translation(product_name):
     """
     if '%' in product_name:
         # URL编码的产品名称
-        return extract_and_translate_product_name(product_name)
+        return extract_and_translate_product_name(product_name, show_progress)
     else:
         # 直接的韩文产品名称
-        english_name = translate_korean_to_english(product_name)
+        english_name = translate_korean_to_english(product_name, show_progress)
         return {
             'korean_name': product_name,
             'english_name': english_name,
             'original_encoded': product_name
         }
+
+
+def batch_translate_products(product_names, show_progress=True):
+    """
+    批量翻译产品名称
+    """
+    if show_progress:
+        progress_bar = st.progress(0)
+        status_text = st.empty()
+        status_text.text(f"🔄 开始批量翻译 {len(product_names)} 个产品...")
+    
+    results = []
+    for i, product_name in enumerate(product_names):
+        if show_progress:
+            progress = int((i + 1) / len(product_names) * 100)
+            progress_bar.progress(progress)
+            status_text.text(f"🔄 翻译进度: {i+1}/{len(product_names)} - {product_name[:30]}...")
+        
+        result = get_product_translation(product_name, show_progress=False)
+        results.append(result)
+    
+    if show_progress:
+        progress_bar.progress(100)
+        status_text.text("✅ 批量翻译完成")
+        time.sleep(1)
+        progress_bar.empty()
+        status_text.empty()
+    
+    return results
+
+
+def test_translation_engines():
+    """
+    测试所有翻译引擎的可用性
+    """
+    test_text = "디파인 재킷"
+    translators = [
+        ('bing', 'Bing翻译'),
+        ('baidu', '百度翻译'),
+        ('google', '谷歌翻译'),
+        ('netease', '网易翻译')
+    ]
+    
+    results = {}
+    for translator_name, translator_display in translators:
+        try:
+            print(f"测试 {translator_display}...")
+            result = ts.translate_text(
+                test_text,
+                from_language='ko',
+                to_language='en',
+                translator=translator_name,
+            )
+            results[translator_display] = {'status': 'success', 'result': result}
+            print(f"✅ {translator_display}: {result}")
+        except Exception as e:
+            results[translator_display] = {'status': 'failed', 'error': str(e)}
+            print(f"❌ {translator_display}: {e}")
+    
+    return results
 
 
 # 测试函数
@@ -197,7 +398,7 @@ def test_translation():
     
     print("=== 产品名称翻译测试 ===")
     for korean_name in test_cases:
-        result = get_product_translation(korean_name)
+        result = get_product_translation(korean_name, show_progress=False)
         print(f"韩文: {result['korean_name']}")
         print(f"英文: {result['english_name']}")
         print("-" * 50)
