@@ -20,9 +20,22 @@ def load_favorites():
             return favorites
         else:
             # Supabase存储
-            response = client.table('lululemon_favorites').select('*').order('added_time', desc=True).execute()
-            favorites = response.data if response.data else []
-            return favorites
+            try:
+                # 尝试按 added_time 排序
+                response = client.table('lululemon_favorites').select('*').order('added_time', desc=True).execute()
+                favorites = response.data if response.data else []
+                return favorites
+            except Exception as e:
+                # 如果 added_time 字段不存在，按 id 排序
+                try:
+                    response = client.table('lululemon_favorites').select('*').order('id', desc=True).execute()
+                    favorites = response.data if response.data else []
+                    return favorites
+                except Exception as e2:
+                    # 如果连 id 排序都不行，直接查询
+                    response = client.table('lululemon_favorites').select('*').execute()
+                    favorites = response.data if response.data else []
+                    return favorites
 
     except Exception as e:
         print(f"❌❌ 加载收藏失败: {e}")
@@ -37,7 +50,7 @@ def add_to_favorites(product_info):
         if is_duplicate(existing_favorites, product_info):
             return False, "该产品已存在于收藏中"
 
-        # 准备插入数据
+        # 准备插入数据 - 只包含数据库表中存在的字段
         product_data = {
             "product_name": product_info["product_name"],
             "product_id": product_info["product_id"],
@@ -47,10 +60,12 @@ def add_to_favorites(product_info):
             "price_cny": product_info["price_cny"],
             "sku": product_info["sku"],
             "image_url": product_info["image_url"],
-            "product_url": product_info["product_url"],
-            "stock_status": product_info.get("stock_status", "未知"),
-            "added_time": datetime.now().isoformat()
+            "product_url": product_info["product_url"]
         }
+        
+        # 只添加存在的字段
+        if "stock_status" in product_info:
+            product_data["stock_status"] = product_info["stock_status"]
         
         # 添加英文名称（如果存在）
         if product_info.get("product_name_en"):
@@ -62,8 +77,9 @@ def add_to_favorites(product_info):
         if hasattr(client, 'load_data'):
             # 本地文件存储
             favorites = client.load_data()
-            # 添加ID（本地存储需要手动生成ID）
+            # 添加ID和时间戳（本地存储需要手动生成）
             product_data['id'] = len(favorites) + 1
+            product_data['added_time'] = datetime.now().isoformat()
             favorites.append(product_data)
             
             if client.save_data(favorites):
@@ -71,25 +87,34 @@ def add_to_favorites(product_info):
             else:
                 return False, "保存到本地文件失败"
         else:
-            # Supabase存储
+            # Supabase存储 - 使用更安全的插入方式
             try:
+                # 先尝试完整插入
                 response = client.table('lululemon_favorites').insert(product_data).execute()
                 if response.data:
                     return True, "成功添加到收藏"
                 else:
                     return False, "添加到数据库失败"
             except Exception as db_error:
-                # 检查是否是因为缺少列
-                if 'product_name_en' in str(db_error) or 'PGRST204' in str(db_error):
-                    # 尝试不带 product_name_en 字段重新提交
-                    product_data_without_en = {k: v for k, v in product_data.items() if k != 'product_name_en'}
-                    response = client.table('lululemon_favorites').insert(product_data_without_en).execute()
-                    if response.data:
-                        return True, "成功添加到收藏（注意：数据库缺少 product_name_en 列，建议执行迁移）"
-                    else:
-                        return False, "添加到数据库失败"
+                error_str = str(db_error)
+                print(f"数据库错误: {error_str}")
+                
+                # 如果是因为字段不存在，尝试逐步减少字段
+                if 'PGRST204' in error_str or 'column' in error_str.lower():
+                    # 移除可能不存在的字段
+                    safe_data = {k: v for k, v in product_data.items() 
+                                if k not in ['product_name_en', 'stock_status']}
+                    
+                    try:
+                        response = client.table('lululemon_favorites').insert(safe_data).execute()
+                        if response.data:
+                            return True, "成功添加到收藏（使用基础字段）"
+                        else:
+                            return False, "添加到数据库失败"
+                    except Exception as e2:
+                        return False, f"数据库字段不匹配: {str(e2)}"
                 else:
-                    raise
+                    return False, f"数据库错误: {str(db_error)}"
 
     except Exception as e:
         print(f"❌❌ 添加到收藏失败: {e}")
