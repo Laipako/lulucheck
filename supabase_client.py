@@ -3,7 +3,19 @@ import streamlit as st
 import json
 import os
 from datetime import datetime
-from config import SUPABASE_URL, SUPABASE_KEY
+
+# 优先使用环境变量，然后使用 config.py
+try:
+    SUPABASE_URL = os.getenv("SUPABASE_URL", "https://kmsebovqoemcenedwfbi.supabase.co")
+    SUPABASE_KEY = os.getenv("SUPABASE_KEY", "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imttc2Vib3Zxb2VtY2VuZWR3ZmJpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA2Nzk4NzMsImV4cCI6MjA3NjI1NTg3M30.PSzlSbwuoDBUyFoZUCXH3jG_V78wzf7YjDk4ynk43Qk")
+except:
+    # 如果环境变量不可用，尝试从 config.py 导入
+    try:
+        from config import SUPABASE_URL, SUPABASE_KEY
+    except:
+        # 最后的备用配置
+        SUPABASE_URL = "https://kmsebovqoemcenedwfbi.supabase.co"
+        SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imttc2Vib3Zxb2VtY2VuZWR3ZmJpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjA2Nzk4NzMsImV4cCI6MjA3NjI1NTg3M30.PSzlSbwuoDBUyFoZUCXH3jG_V78wzf7YjDk4ynk43Qk"
 
 # 尝试导入supabase，如果失败则使用本地文件存储
 try:
